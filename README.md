@@ -2,17 +2,19 @@
 
 AIエージェント用 skill 置き場
 
-## Skills
+## 構成
+
+カテゴリごとのディレクトリに skill を置く。skill 名は各 SKILL.md の frontmatter `name` で定義する。
 
 | Skill | 説明 |
 |---|---|
-| [review-comment](./review-comment/SKILL.md) | GitHub PR にレビュワーとしてコメントする時の型（ラベル・文面構成・投稿フロー） |
-| [review-reply](./review-reply/SKILL.md) | GitHub PR のレビューコメントにレビュイーとして返信する時の型（結論4分類・返信フロー） |
+| [review-comment](./review/comment/SKILL.md) | GitHub PR にレビュワーとしてコメントする時の型（ラベル・文面構成・投稿フロー） |
+| [review-reply](./review/reply/SKILL.md) | GitHub PR のレビューコメントにレビュイーとして返信する時の型（結論4分類・返信フロー） |
 
-## 使い方
-
-Claude Code で使う場合は、skill のディレクトリを `~/.claude/skills/` 以下にコピーまたはシンボリックリンクする。
+## インストール
 
 ```bash
-ln -s /path/to/agent-skills/review-comment ~/.claude/skills/review-comment
+./install.sh
 ```
+
+リポジトリ内の全 skill を `~/.claude/skills/` に symlink する。skill を追加・移動したら再実行する。
