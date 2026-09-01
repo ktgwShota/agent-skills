@@ -7,6 +7,20 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 mkdir -p "$SKILLS_DIR"
 
+# このリポジトリを指すリンク切れ symlink を掃除する（skill の移動・改名対応）
+for link in "$SKILLS_DIR"/*; do
+  [ -L "$link" ] || continue
+  target="$(readlink "$link")"
+  case "$target" in
+    "$REPO_DIR"/*)
+      if [ ! -e "$target" ]; then
+        rm "$link"
+        echo "removed: $link (リンク切れ)"
+      fi
+      ;;
+  esac
+done
+
 find "$REPO_DIR" -name SKILL.md -not -path '*/.git/*' | while read -r skill_file; do
   skill_dir="$(dirname "$skill_file")"
   name="$(sed -n 's/^name:[[:space:]]*//p' "$skill_file" | head -n1)"

@@ -1,5 +1,5 @@
 ---
-name: review-reply
+name: reviewee-reply
 description: >
   GitHub PR で受けたレビューコメントにレビュイーとして返信するときは必ずこの型に従う。
 ---

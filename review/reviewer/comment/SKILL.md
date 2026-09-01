@@ -1,5 +1,5 @@
 ---
-name: review-comment
+name: reviewer-comment
 description: >
   GitHub PR にレビュワーとしてコメントを作成・投稿・修正するときは必ずこの型に従う。
 ---
