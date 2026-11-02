@@ -19,3 +19,5 @@ AIエージェント用 skill 置き場
 ```
 
 リポジトリ内の全 skill を `~/.claude/skills/` に symlink する。skill を追加・移動したら再実行する。
+
+Windows の Git Bash では symlink ではなくコピーになる。skill を編集・pull したときも再実行して `~/.claude/skills/` に反映する。
