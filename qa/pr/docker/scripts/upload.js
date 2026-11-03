@@ -55,8 +55,14 @@ const main = async () => {
   await field.fill('')
   const fileInput = field.locator('xpath=ancestor::form').locator('input[type="file"]').first()
   const results = []
-  for (const file of files) {
-    results.push({ file, markdown: await uploadOne(page, field, fileInput, file) })
+  for (const [index, file] of files.entries()) {
+    console.error(`[${index + 1}/${files.length}] ${file}`)
+    try {
+      results.push({ file, markdown: await uploadOne(page, field, fileInput, file) })
+    } catch (err) {
+      results.push({ file, error: err.message, fieldValue: (await field.inputValue()).slice(-300) })
+      await field.fill('')
+    }
   }
   await field.fill('')
   await context.close()
