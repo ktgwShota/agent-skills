@@ -30,6 +30,13 @@ find "$REPO_DIR" -name SKILL.md -not -path '*/.git/*' | while read -r skill_file
     continue
   fi
 
-  ln -sfn "$skill_dir" "$SKILLS_DIR/$name"
-  echo "linked: $SKILLS_DIR/$name -> $skill_dir"
+  # Windows の Git Bash では ln -s がコピーになり、再実行すると既存のコピーの中に入れ子で作られる。
+  # 前回このスクリプトが作ったコピー（同じ name の SKILL.md を持つディレクトリ）は消してから作り直す
+  dest="${SKILLS_DIR:?}/${name:?}"
+  if [ -d "$dest" ] && [ ! -L "$dest" ] && grep -q "^name:[[:space:]]*${name}[[:space:]]*$" "$dest/SKILL.md" 2> /dev/null; then
+    rm -rf "$dest"
+  fi
+
+  ln -sfn "$skill_dir" "$dest"
+  echo "linked: $dest -> $skill_dir"
 done

@@ -19,6 +19,7 @@ const isTracked = (url) => !scenario.trackUrls?.length || scenario.trackUrls.som
 
 const runStep = async (page, step, profileDir) => {
   if (step.goto) return page.goto(step.goto, { waitUntil: 'load' })
+  if (step.back) return page.goBack({ waitUntil: 'load' })
   if (step.wait) return page.waitForTimeout(step.wait)
   if (step.scroll) return page.mouse.wheel(0, step.scroll)
   if (step.click) return page.click(step.click)
