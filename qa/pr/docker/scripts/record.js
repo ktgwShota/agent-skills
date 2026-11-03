@@ -25,6 +25,11 @@ const runStep = async (page, step, profileDir) => {
   if (step.click) return page.click(step.click)
   if (step.fill) return page.fill(step.fill.selector, step.fill.value)
   if (step.screenshot) return page.screenshot({ path: path.join(profileDir, `${step.screenshot}.png`), fullPage: !!step.fullPage })
+  if (step.evaluate) {
+    const value = await page.evaluate(step.evaluate.expression)
+    const out = `$ evaluate ${step.evaluate.expression}\n${JSON.stringify(value, null, 2)}\n`
+    return fs.writeFileSync(path.join(profileDir, `evaluate-${step.evaluate.name}.txt`), out)
+  }
   throw new Error(`未対応の step: ${JSON.stringify(step)}`)
 }
 

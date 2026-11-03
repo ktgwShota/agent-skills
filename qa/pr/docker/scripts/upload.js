@@ -1,4 +1,4 @@
-// PR のコメント欄にファイルを添付してアップロードし、GitHub が返した Markdown を出力する
+// PR のコメント欄にファイルを添付してアップロードし、GitHub が返した Markdown と URL を出力する
 // コメントの投稿はしない（入力欄は最後に空にする）。投稿はホストの gh で行う
 const path = require('node:path')
 const { chromium } = require('playwright-core')
@@ -9,6 +9,9 @@ const UPLOAD_TIMEOUT_MS = 180 * 1000
 const POLL_MS = 500
 const UPLOADING_PATTERN = /\[Uploading [^\]]*\]\(\)/
 const COMMENT_FIELD_SELECTORS = ['#new_comment_field', 'textarea[name="comment[body]"]']
+const ASSET_URL_PATTERN = /https:\/\/github\.com\/user-attachments\/assets\/[0-9a-f-]+/
+// 失敗したファイルがあったことを、呼び出し側が終了コードで分かるようにする
+const EXIT_PARTIAL_FAILURE = 3
 
 const [repo, pr, ...files] = process.argv.slice(2)
 
@@ -58,7 +61,8 @@ const main = async () => {
   for (const [index, file] of files.entries()) {
     console.error(`[${index + 1}/${files.length}] ${file}`)
     try {
-      results.push({ file, markdown: await uploadOne(page, field, fileInput, file) })
+      const markdown = await uploadOne(page, field, fileInput, file)
+      results.push({ file, markdown, url: (markdown.match(ASSET_URL_PATTERN) || [])[0] ?? null })
     } catch (err) {
       results.push({ file, error: err.message, fieldValue: (await field.inputValue()).slice(-300) })
       await field.fill('')
@@ -67,6 +71,7 @@ const main = async () => {
   await field.fill('')
   await context.close()
   console.log(JSON.stringify(results, null, 2))
+  if (results.some((r) => r.error)) process.exitCode = EXIT_PARTIAL_FAILURE
 }
 
 main().catch((err) => {
