@@ -56,6 +56,8 @@ description: >
 - Before と After は同じ手順・環境・データで取る。環境変数（`TZ` など）は CI の設定に合わせる
 - ブラウザでの確認は `docker/` のコンテナで行い、ユーザーの画面やブラウザには触れない
 - 証跡（動画・スクショ・生データ・実行したコマンドと出力）は作業ディレクトリに保存する
+  - コマンドは、1 行目に `$ {コマンド}`、続けて出力、最後に `exit={終了コード}` を 1 つのファイルに保存する
+  - コメントの表に載せる観点ごとに、証跡を用意する
 - 自分の操作が原因で出たエラーやログは、そうと分かるように記録する
 - 起動したサーバーやコンテナは終了時に止め、止まったことを `docker ps` などで記録する
 
@@ -65,7 +67,7 @@ description: >
 
 ### 5. 投稿
 
-1. 証跡を `docker/run.sh upload` でアップロードし、返ってきた Markdown を本文に埋め込む
+1. コマンドの出力を `docker/run.sh shot` で画像にし、動画・スクショと一緒に `docker/run.sh upload` でアップロードして、返ってきた Markdown を本文に埋め込む
    - 動画は表のセルに入れるとリンクになり再生できない。URL だけを単独の行に置く
    - 終了コード 2（未ログイン）なら、ユーザーに `docker/run.sh login` で一度ログインしてもらう
    - 失敗したら、テキストだけ投稿し、手で添付する証跡のパスをユーザーに渡す
@@ -80,7 +82,19 @@ description: >
 |---|---|
 | `run.sh record {scenario.json} {出力先}` | シナリオどおりに操作し、プロファイルごとに `video.webm`・スクショ・`network.json`・`console.json` を出力する |
 | `run.sh upload {owner/repo} {pr} {ディレクトリ} {ファイル}...` | ファイルを PR のコメント欄にアップロードし、ファイルごとの Markdown を JSON で出力する（投稿はしない） |
+| `run.sh shot {spec.json} {入力ディレクトリ} {出力先}` | コマンドの出力をターミナル風の画像にする。画像には出典のファイルと表示した行の範囲が入る |
 | `run.sh login` | `http://localhost:6080/vnc.html` に表示したブラウザで、ユーザーが GitHub にログインする |
+
+shot の spec の例（`file` は入力ディレクトリからの相対パス。`range` は `all`・`head:N`・`tail:N`・`lines:A-B`）:
+
+```json
+[
+  { "file": "audit-before.txt", "out": "audit-before.png", "title": "Before: pnpm audit --prod", "range": "tail:4" },
+  { "file": "audit-after.txt", "out": "audit-after.png", "title": "After: pnpm audit --prod" }
+]
+```
+
+長い出力は、結果が分かる行（件数・終了コードなど）を `range` で選ぶ。
 
 シナリオの例:
 
@@ -132,34 +146,47 @@ description: >
 
 - 表のセルは短い句 1 つまで。結果は ✅ / ⚠️ / ❌ で始める
 - 受け入れ要件がなければ「受け入れ要件」の表は省き、PR の目的と変更内容から立てた観点を「確認したこと」の表に並べる
+- 表の各行に、表と同じ順で証跡の折りたたみを 1 つずつ付ける。Before / After があるものは並べる。CI が同じコマンドを実行していれば、そのジョブのリンクも付ける
 - 中身のない節は省く
 - 手元にしかないファイルの名前は書かない
 
 ```markdown
 ## QA 結果：{✅ 問題なし ／ ❌ 問題あり（n 件）}（{環境} / {確認した SHA の先頭 7 桁} / {YYYY-MM-DD}）
 
+Before は {ベースの SHA の先頭 7 桁}、After は {head の SHA の先頭 7 桁}
+
 ### 受け入れ要件
 | 要件 | 結果 |
 |---|---|
+
+<details><summary>証跡: {要件}</summary>
+
+CI: {ジョブのリンク}
+
+| Before | After |
+|---|---|
+| {画像} | {画像} |
+
+</details>
 
 ### そのほかに確認したこと
 | 観点 | 結果 | 方法 |
 |---|---|---|
 
-### 確認していないこと
-- 
+<details><summary>証跡: {観点}</summary>
 
-<details><summary>Before / After の動画（Before は {ベースの SHA の先頭 7 桁}）</summary>
-
-**{観点}・Before**
+**Before**
 
 {動画の URL}
 
-**{観点}・After**
+**After**
 
 {動画の URL}
 
 </details>
+
+### 確認していないこと
+- 
 
 <details><summary>確認の詳細（数値・推測を含む点）</summary>
 

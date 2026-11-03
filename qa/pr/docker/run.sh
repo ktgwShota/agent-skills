@@ -35,6 +35,17 @@ case "$cmd" in
       -v "$(host_path "$(abs_dir "$out_dir")"):/out" \
       "$IMAGE" record "/in/$(basename "$scenario")" /out
     ;;
+  shot)
+    spec="$1"
+    in_dir="$2"
+    out_dir="$3"
+    mkdir -p "$out_dir"
+    docker run --rm --shm-size=1g \
+      -v "$(host_path "$(abs_dir "$(dirname "$spec")")"):/spec:ro" \
+      -v "$(host_path "$(abs_dir "$in_dir")"):/in:ro" \
+      -v "$(host_path "$(abs_dir "$out_dir")"):/out" \
+      "$IMAGE" shot "/spec/$(basename "$spec")" /out
+    ;;
   upload)
     repo="$1"
     pr="$2"
@@ -52,6 +63,7 @@ usage:
   run.sh login
   run.sh record <scenario.json> <out_dir>
   run.sh upload <owner/repo> <pr> <files_dir> <file>...
+  run.sh shot <spec.json> <in_dir> <out_dir>
 EOF
     exit 1
     ;;

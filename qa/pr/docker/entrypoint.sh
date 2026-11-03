@@ -19,8 +19,11 @@ case "$cmd" in
   upload)
     node /app/scripts/upload.js "$@"
     ;;
+  shot)
+    node /app/scripts/shot.js "$@"
+    ;;
   *)
-    echo "usage: login | record <scenario.json> <out_dir> | upload <owner/repo> <pr> <file>..." >&2
+    echo "usage: login | record <scenario.json> <out_dir> | upload <owner/repo> <pr> <file>... | shot <spec.json> <out_dir>" >&2
     exit 1
     ;;
 esac
