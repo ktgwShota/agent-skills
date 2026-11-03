@@ -27,13 +27,23 @@ const selectLines = (lines, range = 'all') => {
   throw new Error(`未対応の range: ${range}`)
 }
 
+// 1 行目が `$ コマンド` なら、抜粋しても何のコマンドの出力か分かるように先頭に残す
+const keepCommandLine = (lines, picked) => {
+  const [first] = lines
+  if (!first.startsWith('$ ') || picked[0] === first) return picked
+  return [first, '…', ...picked]
+}
+
 const render = (spec) => {
   const text = fs
     .readFileSync(path.join(IN_DIR, spec.file), 'utf8')
     .replace(ANSI_PATTERN, '')
     .replace(/\r\n/g, '\n')
     .replace(/\n$/, '')
-  const { picked, label } = selectLines(text.split('\n'), spec.range)
+  const lines = text.split('\n')
+  const selected = selectLines(lines, spec.range)
+  const picked = keepCommandLine(lines, selected.picked)
+  const label = picked === selected.picked ? selected.label : `1 行目と${selected.label}`
   return `<!doctype html><meta charset="utf-8"><style>
 body{margin:0;background:#1e1e1e;font-family:"Noto Sans Mono CJK JP","DejaVu Sans Mono",monospace}
 .head{background:#2d2d2d;color:#ddd;padding:10px 14px;font:13px/1.5 sans-serif}
