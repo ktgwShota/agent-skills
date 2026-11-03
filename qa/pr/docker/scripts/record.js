@@ -77,7 +77,9 @@ const runProfile = async (browser, profile) => {
 }
 
 const main = async () => {
-  const browser = await chromium.launch()
+  // ホストで動く開発環境（localhost:xxxx）を、URL を変えずにコンテナのブラウザから開く
+  const args = scenario.localhostToHost ? ['--host-resolver-rules=MAP localhost host.docker.internal'] : []
+  const browser = await chromium.launch({ args })
   const summary = []
   for (const profile of scenario.profiles) summary.push(await runProfile(browser, profile))
   await browser.close()
