@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Claude Code の会話記録から、セッションのトークン使用量と金額の目安を集計する。
+"""Claude Code の会話記録から、セッションのトークン使用量・金額の目安・経過時間を集計する。
 
-  token-usage.py --session ID --checkpoint 計画 --progress progress.md   # 累計を進捗ファイルに追記
+  token-usage.py --session ID --checkpoint 計画 --progress progress.md   # 時刻と累計を進捗ファイルに追記
   token-usage.py --session ID --progress progress.md --markdown          # 役割別・ステップ別の表を出力
 """
 import argparse
 import json
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # USD / 100 万トークン: (入力, 出力, キャッシュ読み込み)。キャッシュ書き込みは入力の 1.25 倍（5 分）/ 2 倍（1 時間）
@@ -28,7 +28,9 @@ PRICES = {
     "claude-haiku-4-5": (1.0, 5.0, 0.10),
 }
 FIELDS = ("input", "cache_write", "cache_read", "output", "usd")
-TABLE_HEADER = "| チェックポイント | 時刻 | 入力 | キャッシュ書き込み | キャッシュ読み込み | 出力 | 金額の目安（USD） |"
+TABLE_HEADER = (
+    "| チェックポイント | 時刻 | 経過（秒） | 入力 | キャッシュ書き込み | キャッシュ読み込み | 出力 | 金額の目安（USD） |"
+)
 
 
 def price_for(model: str):
@@ -65,14 +67,18 @@ def usage_cost(model: str, usage: dict) -> dict:
     return row
 
 
+def read_entries(path: Path):
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            yield json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+
 def read_transcript(path: Path) -> dict:
     """メッセージ ID ごとに最後の usage を残す（1 回の応答が複数行に分かれるため）。"""
     messages = {}
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    for entry in read_entries(path):
         message = entry.get("message") or {}
         usage = message.get("usage")
         if entry.get("type") != "assistant" or not usage:
@@ -80,6 +86,15 @@ def read_transcript(path: Path) -> dict:
         key = message.get("id") or entry.get("requestId") or entry.get("uuid")
         messages[key] = (message.get("model", "unknown"), usage)
     return messages
+
+
+def session_start(session: str, projects_dir: Path):
+    """セッションの最初の記録の時刻。"""
+    for main_file in projects_dir.glob(f"*/{session}.jsonl"):
+        for entry in read_entries(main_file):
+            if entry.get("timestamp"):
+                return datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+    return None
 
 
 def role_of(meta_path: Path) -> str:
@@ -109,13 +124,15 @@ def grand_total(totals: dict) -> dict:
     return {field: sum(row[field] for row in totals.values()) for field in FIELDS}
 
 
-def append_checkpoint(progress: Path, name: str, total: dict) -> None:
+def append_checkpoint(progress: Path, name: str, total: dict, start) -> None:
     text = progress.read_text(encoding="utf-8") if progress.exists() else ""
     if TABLE_HEADER not in text:
-        text = text.rstrip("\n") + "\n\n" + TABLE_HEADER + "\n|---|---|---|---|---|---|---|\n"
+        text = text.rstrip("\n") + "\n\n" + TABLE_HEADER + "\n|---|---|---|---|---|---|---|---|\n"
+    now = datetime.now(timezone.utc)
+    elapsed = int((now - start).total_seconds()) if start else 0
     line = (
-        f"| {name} | {datetime.now().strftime('%H:%M')} | {total['input']} | {total['cache_write']} | "
-        f"{total['cache_read']} | {total['output']} | {total['usd']:.2f} |\n"
+        f"| {name} | {now.astimezone().strftime('%H:%M:%S')} | {elapsed} | {total['input']} | "
+        f"{total['cache_write']} | {total['cache_read']} | {total['output']} | {total['usd']:.2f} |\n"
     )
     progress.write_text(text.rstrip("\n") + "\n" + line, encoding="utf-8")
 
@@ -126,30 +143,34 @@ def read_checkpoints(progress: Path) -> list:
     rows = []
     for line in progress.read_text(encoding="utf-8").splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) == 7 and re.fullmatch(r"\d+", cells[2] or ""):
-            rows.append((cells[0], [int(c) for c in cells[2:6]] + [float(cells[6])]))
+        if len(cells) == 8 and re.fullmatch(r"\d+", cells[2] or ""):
+            rows.append((cells[0], int(cells[2]), [int(c) for c in cells[3:7]] + [float(cells[7])]))
     return rows
 
 
-def fmt_row(label: str, values) -> str:
+def fmt_row(label: str, values, seconds=None) -> str:
     *tokens, usd = values
-    return f"| {label} | " + " | ".join(f"{int(v):,}" for v in tokens) + f" | ${usd:.2f} |"
+    duration = "" if seconds is None else f" {seconds // 60}分{seconds % 60:02d}秒 |"
+    return f"| {label} |{duration} " + " | ".join(f"{int(v):,}" for v in tokens) + f" | ${usd:.2f} |"
 
 
 def print_markdown(totals: dict, checkpoints: list) -> None:
-    head = "| {} | 入力 | キャッシュ書き込み | キャッシュ読み込み | 出力 | 金額の目安 |\n|---|---|---|---|---|---|"
     print("### 役割ごと\n")
-    print(head.format("役割"))
+    print("| 役割 | 入力 | キャッシュ書き込み | キャッシュ読み込み | 出力 | 金額の目安 |")
+    print("|---|---|---|---|---|---|")
     for role in sorted(totals, key=lambda r: (r != "main", r)):
         print(fmt_row(role, [totals[role][f] for f in FIELDS]))
     print(fmt_row("合計", [grand_total(totals)[f] for f in FIELDS]))
     if checkpoints:
         print("\n### ステップごと（main とサブエージェントの合計）\n")
-        print(head.format("ステップ"))
-        previous = [0, 0, 0, 0, 0.0]
-        for name, values in checkpoints:
-            print(fmt_row(name, [v - p for v, p in zip(values, previous)]))
-            previous = values
+        print("| ステップ | 所要時間 | 入力 | キャッシュ書き込み | キャッシュ読み込み | 出力 | 金額の目安 |")
+        print("|---|---|---|---|---|---|---|")
+        previous, previous_elapsed = [0, 0, 0, 0, 0.0], 0
+        for name, elapsed, values in checkpoints:
+            row = [v - p for v, p in zip(values, previous)]
+            print(fmt_row(name, row, max(elapsed - previous_elapsed, 0)))
+            previous, previous_elapsed = values, elapsed
+        print("\n所要時間には、ユーザーの返事を待っていた時間も含む。")
     print("\n金額は API の料金表で換算した目安。サブスクリプションの請求額とは異なる。")
 
 
@@ -162,7 +183,8 @@ def main() -> int:
     parser.add_argument("--markdown", action="store_true")
     args = parser.parse_args()
 
-    totals = collect(args.session, Path(args.projects_dir))
+    projects_dir = Path(args.projects_dir)
+    totals = collect(args.session, projects_dir)
     if not totals:
         print(f"セッション {args.session} の記録が {args.projects_dir} に見つからない")
         return 1
@@ -170,7 +192,7 @@ def main() -> int:
     if args.checkpoint:
         if not progress:
             parser.error("--checkpoint には --progress が要る")
-        append_checkpoint(progress, args.checkpoint, grand_total(totals))
+        append_checkpoint(progress, args.checkpoint, grand_total(totals), session_start(args.session, projects_dir))
     if args.markdown:
         print_markdown(totals, read_checkpoints(progress))
     elif not args.checkpoint:
