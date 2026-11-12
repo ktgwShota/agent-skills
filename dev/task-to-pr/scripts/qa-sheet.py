@@ -12,7 +12,10 @@ try:
     from openpyxl.drawing.image import Image
     from openpyxl.styles import Alignment, Font, PatternFill
 except ImportError:
-    sys.exit("openpyxl が無い。pip install openpyxl pillow で入れる")
+    sys.exit(
+        "openpyxl が読み込めない。python3 -I で動かしているならユーザーの site-packages が読まれないので -I を外す。"
+        "入っていなければ pip install openpyxl pillow で入れる"
+    )
 
 COLUMNS = [
     ("完了要件", "requirement", 30),
