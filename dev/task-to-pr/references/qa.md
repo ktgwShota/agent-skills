@@ -20,6 +20,8 @@
 {
   "baseUrl": "http://localhost:5173",
   "viewport": { "width": 1280, "height": 800 },
+  "locale": "ja-JP",
+  "timezoneId": "Asia/Tokyo",
   "steps": [
     { "goto": "/" },
     { "fill": { "selector": "input[name=email]", "value": "taro" } },
@@ -31,6 +33,7 @@
 }
 ```
 
+- `locale` と `timezoneId` は、その画面を使う人の環境に合わせる（日本語の画面なら `ja-JP` と `Asia/Tokyo`）。省くとブラウザの既定（英語・UTC）になり、日付の入力欄などの見え方が実際と変わる
 - `screenshot` は `{出力先}/{名前}.png` に保存する
 - `text` は要素の文字を `{出力先}/{名前}.txt` に保存する。期待結果との照合に使う
 - `playwright-core` と Chromium を使う。Chromium は環境変数 `CHROMIUM_PATH`、`/usr/bin/chromium`、Playwright 同梱の順に探す

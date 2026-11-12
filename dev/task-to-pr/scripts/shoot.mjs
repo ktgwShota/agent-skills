@@ -36,7 +36,11 @@ mkdirSync(outDir, { recursive: true })
 
 const executablePath = chromiumPath()
 const browser = await chromium.launch(executablePath ? { executablePath } : {})
-const page = await browser.newPage({ viewport: scenario.viewport ?? { width: 1280, height: 800 } })
+const page = await browser.newPage({
+  viewport: scenario.viewport ?? { width: 1280, height: 800 },
+  locale: scenario.locale,
+  timezoneId: scenario.timezoneId,
+})
 const results = []
 
 try {
