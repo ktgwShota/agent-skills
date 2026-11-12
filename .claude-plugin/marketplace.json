@@ -1,0 +1,11 @@
+{
+  "name": "ktgwshota-agent-skills",
+  "owner": { "name": "ktgwShota" },
+  "plugins": [
+    {
+      "name": "task-to-pr",
+      "source": "./",
+      "description": "タスクのヒアリングから TDD での実装・レビュー・ブラウザ QA を経て Draft PR を出すまで"
+    }
+  ]
+}

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# リポジトリ内の全 skill を ~/.claude/skills/ に symlink する
+# リポジトリ内の全 skill を ~/.claude/skills/ に、skill に付属するエージェント定義を ~/.claude/agents/ に symlink する
 set -euo pipefail
 
 SKILLS_DIR="${HOME}/.claude/skills"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-mkdir -p "$SKILLS_DIR"
+AGENTS_DIR="${HOME}/.claude/agents"
+
+mkdir -p "$SKILLS_DIR" "$AGENTS_DIR"
 
 # このリポジトリを指すリンク切れ symlink を掃除する（skill の移動・改名対応）
 for link in "$SKILLS_DIR"/*; do
@@ -39,4 +41,12 @@ find "$REPO_DIR" -name SKILL.md -not -path '*/.git/*' | while read -r skill_file
 
   ln -sfn "$skill_dir" "$dest"
   echo "linked: $dest -> $skill_dir"
+done
+
+# skill のディレクトリの agents/*.md を、frontmatter の name でエージェント定義として link する
+find "$REPO_DIR" -path '*/agents/*.md' -not -path '*/.git/*' | while read -r agent_file; do
+  name="$(sed -n 's/^name:[[:space:]]*//p' "$agent_file" | head -n1)"
+  [ -n "$name" ] || continue
+  ln -sfn "$agent_file" "$AGENTS_DIR/$name.md"
+  echo "linked: $AGENTS_DIR/$name.md -> $agent_file"
 done
