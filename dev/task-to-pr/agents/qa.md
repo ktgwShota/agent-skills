@@ -15,14 +15,14 @@ tools: Read, Grep, Glob, Write, Bash
 
 ## やること
 
-1. 変更後の worktree で、プロファイルの開発サーバーを起動する。URL に応答するまで待ち、そのポートで待ち受けているプロセスの ID（`ss -ltnp` や `lsof -ti :{ポート}` で調べる）を記録する。起動したシェルのプロセス ID だけでは、子プロセスが止まらないことがある
-2. シナリオごとに、[QA シナリオと QA シート](../references/qa.md) の形の JSON を `qa/scenarios/` に書き、`shoot.mjs` でスクショと要素の文字を `qa/after/` に保存する。`locale` と `timezoneId` は画面を使う人の環境に合わせる
+1. 変更後の worktree で、プロファイルの開発サーバーを起動する。URL に応答するまで待ち、そのポートで待ち受けているプロセスの ID（`ss -ltnp` や `lsof -ti :{ポート}` で調べる）を `qa/pids.txt` に書く。起動したシェルのプロセス ID だけでは、子プロセスが止まらないことがある
+2. シナリオごとに、[QA シナリオと QA シート](../references/qa.md) の形の JSON を `qa/scenarios/` に書き、`shoot.mjs` でスクショと要素の文字を `qa/after/` に保存する。スクショは要件 1 つにつき、期待結果が分かる 1 枚を基本にし、途中の状態は `text` で記録する
 3. 変更前も撮るシナリオは、変更前用の worktree を `git checkout --detach {ベースの SHA}` に切り替え、別のポートで開発サーバーを起動して、同じ手順で `qa/before/` に保存する。撮り終えたら、その worktree を元のブランチに戻す
 4. 保存した文字と、QA シートに載せるスクショをすべて Read で開いて見て、期待結果と照らし、OK / NG を決める。NG なら、何が期待と違うかを具体的に書く
 5. `qa-sheet.py` で `qa/qa-sheet.xlsx` を作る
 6. 記録したプロセス ID を指定してサーバーを止め、ポートが閉じたことを確かめる
 
-返答は、ユーザーが使っている言語で書く。
+途中の文と返答は、ユーザーが使っている言語で書く。
 
 道具（`playwright-core`・Chromium・`openpyxl`・`Pillow`）が無いとき、`/run/sandbox` があれば入れてよい。それ以外の環境では入れずに `STATUS: BLOCKED` を返す。
 
