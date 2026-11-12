@@ -33,3 +33,17 @@ claude plugin install task-to-pr@ktgwshota-agent-skills
 ```
 
 更新は `claude plugin marketplace update ktgwshota-agent-skills` の後に `claude plugin update task-to-pr@ktgwshota-agent-skills`。
+
+起動は `/task-to-pr:task-to-pr {チケットの URL や説明}`。同じ名前の skill がほかの場所（`~/.claude/skills` や sbx の共有 skill）にもあると、`/task-to-pr` がそちらに解決されることがある。
+
+### Docker Sandboxes（sbx）で使うときの注意
+
+| 項目 | 内容 |
+|---|---|
+| サンドボックスの作り方 | `sbx create --clone --skills off …`。clone モードならホストのリポジトリを書き換えない。`--skills off` で sbx の共有 skill とプラグインの skill の衝突を避ける |
+| デーモン | 権限の制限が無いターミナルから `sbx daemon start --detach` で起動する。Windows では一時フォルダの `sboxd-*`（データの置き場所へのジャンクション）を消さない |
+| 言語 | kit が起動のたびに `~/.claude/settings.json` を作り直すので、`claude --settings '{"language":"japanese"}'` のように起動時に渡す |
+| 外への通信 | 既定の `balanced` では許可リストに無いホストへの通信が名前解決の失敗として止まる。プロジェクトごとに `sbx policy allow network --sandbox {名前} {ホスト}` を用意する |
+| 道具 | QA には Chromium と日本語フォントが要る。Debian 13 のイメージでは Playwright の依存インストールが失敗するので、`apt install chromium fonts-noto-cjk` と `playwright-core` を使う。QA シートには `openpyxl` と `Pillow` が要る |
+| 認証 | GitHub は `sbx secret set github` で、対象リポジトリだけに絞った fine-grained token を登録する。中から見えるのは代わりの値だけ |
+| `claude -p` で動かす | AskUserQuestion が使えないので、skill は質問を本文に書いてターンを終える。`--resume {セッション ID}` で答えを送る |
