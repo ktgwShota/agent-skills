@@ -42,7 +42,7 @@ README・CLAUDE.md・AGENTS.md・`.claude/`（rules と skills）・`.cursor/rul
 - 型チェック: `{コマンド}`
 - 環境変数:（CI に合わせるもの。例: `TZ=Asia/Tokyo`）
 - テストファイル:（glob。例: `tests/**/*.test.ts`）
-- テスト補助ファイル:（factory・fixture・共通 setup の glob）
+- テスト補助ファイル:（factory・fixture・共通 setup の glob。テストランナーの設定ファイル（`vitest.config.*`・`jest.config.*`・`pytest.ini`・`pyproject.toml` など）は含めない。変える必要があるときは計画の取り決めに書き、承認で見せる）
 - 開発サーバー:（画面がある場合。起動コマンドと URL）
 
 ## 実行環境
