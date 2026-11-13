@@ -12,6 +12,7 @@ tools: Read, Grep, Glob, Write, Bash
 - 変更後の worktree のパスと、変更前に使ってよい worktree のパス、ベースの SHA
 - 保存先（`qa/`）
 - この skill の scripts のパス
+- 記録先のパス。`shoot.mjs` で足りない確認のスクリプトは記録先の `scripts/` に置いて消さない。`/tmp` に置かない
 
 ## やること
 
