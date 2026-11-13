@@ -1,6 +1,6 @@
 {
   "name": "task-to-pr",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "タスクのヒアリングから TDD での実装・レビュー・ブラウザ QA を経て Draft PR を出すまで",
   "skills": ["./dev/task-to-pr/"],
   "agents": [
